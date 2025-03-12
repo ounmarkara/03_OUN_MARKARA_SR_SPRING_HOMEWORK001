@@ -1,6 +1,7 @@
 package org.example.spring_homework001.controller;
 
 import org.example.spring_homework001.model.entity.Ticket;
+import org.example.spring_homework001.model.request.BulkUpdatePaymentStatus;
 import org.example.spring_homework001.model.request.TicketRequest;
 import org.example.spring_homework001.model.request.TicketStatus;
 import org.example.spring_homework001.response.Response;
@@ -126,5 +127,39 @@ public class TicketController {
         }
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(new Response<>(false, "Ticket not found", HttpStatus.NOT_FOUND, null));
+    }
+
+    @PutMapping("/bulk-update-payment")
+    public ResponseEntity<Response<List<Ticket>>> bulkUpdatePaymentStatus(
+            @RequestBody BulkUpdatePaymentStatus request) {
+        if (request == null || request.getTicketIds() == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new Response<>(false, "Invalid request: ticketIds cannot be null", HttpStatus.BAD_REQUEST, null));
+        }
+
+        List<Ticket> updatedTickets = new ArrayList<>();
+        Integer[] ticketIds = request.getTicketIds();
+        boolean newPaymentStatus = request.isPaymentStatus();
+
+        if (ticketIds.length == 0) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new Response<>(false, "No ticket IDs provided", HttpStatus.BAD_REQUEST, null));
+        }
+
+        for (Integer ticketId : ticketIds) {
+            for (Ticket ticket : TICKETS) {
+                if (ticket.getTicketId().equals(ticketId.longValue())) {
+                    ticket.setPaymentStatus(newPaymentStatus);
+                    updatedTickets.add(ticket);
+                    break;
+                }
+            }
+        }
+
+        if (updatedTickets.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new Response<>(false, "No tickets found to update", HttpStatus.NOT_FOUND, null));
+        }
+        return ResponseEntity.ok(new Response<>(true, "Payment status updated successfully", HttpStatus.OK, updatedTickets));
     }
 }
